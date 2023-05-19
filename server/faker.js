@@ -10,7 +10,7 @@ const pool = new Pool({
 });
 
 const SEED_USERS_COUNT = 1000;
-const SEED_REVIEWS_COUNT = 500;
+const SEED_REVIEWS_COUNT = 1000;
 
 const seedUsers = async () => {
     const users = [];

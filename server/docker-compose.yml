@@ -47,6 +47,13 @@ services:
       - DATABASE_URL=postgres://postgres:password@db:5432/mydb
     command: sh -c 'until nc -z db 5432; do sleep 1; done; npm run faker'
 
+  
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+
 volumes:
   db-data:
 

@@ -2,12 +2,31 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+// const compression = require('compression')
+const redis = require('redis')
+
+const redisURL = 'redis://127.0.0.1:6379'
+
+const redisClient = redis.createClient({
+    url: 'redis://redis:6379'
+  });
+redisClient.connect().catch(console.error)
+
+
+redisClient.on("ready", () => {
+    console.log("Connected!");
+});
+
+redisClient.on("error", () => {
+    console.log("Redis Client Error!");
+});
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+// app.use(compression)
 
 const pool = new Pool({
     user: 'postgres',
@@ -16,6 +35,8 @@ const pool = new Pool({
     password: 'password',
     port: 5432
 });
+
+const DEFAULT_EXPIRATION = 3600
 
 app.get('/games/:gameId/languages', (req, res) => {
     const gameId = req.params.gameId;
@@ -65,17 +86,40 @@ app.get('/reviews', async (req, res) => {
     }
 });
 
-app.get('/reviews/users', (req, res) => {
-    const query = 'SELECT reviews.*, users.name, users.image, users.reviewCount, users.gamesOwned FROM reviews JOIN users ON reviews.user_id = users.user_id';
-    pool.query(query, (error, results) => {
-        if (error) {
-            console.log(error);
+app.get('/reviews/users', async (req, res) => {
+    let reviews = await redisClient.get('userReviews')
+    if (!reviews) {
+        try {
+            console.log('Cache Miss')
+            const data = await pool.query(`SELECT reviews.*, users.name, users.image, users.reviewCount, users.gamesOwned 
+                                        FROM reviews JOIN users ON reviews.user_id = users.user_id`);
+            redisClient.set('userReviews', JSON.stringify(data), 'EX', 3600)
+            res.json(data.rows);
+        } catch (error) {
+            console.error(error);
             res.status(500).send('Internal Server Error');
-        } else {
-            res.json(results.rows);
         }
-    });
+    } else {
+        console.log('Cache Hit')
+        res.json(JSON.parse(reviews))
+    }
 });
+
+function getOrSetCache(key, cb) {
+    return new Promise((resolve, reject) => {
+        redisClient.get(key, async (error, data) => {
+            if (error) return reject(error);
+            if (data != null) return resolve(JSON.parse(data));
+            try {
+                const freshData = await cb();
+                redisClient.set(key, JSON.stringify(freshData), 'EX', 3600);
+                resolve(freshData);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    });
+}
 
 
 app.listen(3000, () => {

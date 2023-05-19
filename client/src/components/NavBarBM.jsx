@@ -1,7 +1,7 @@
 import React, {useContext} from "react";
 import "../styles/NavBarBM.css";
 import ModalContext from "../context/ModalContext";
-import { Modal } from "react-bootstrap";
+
 
 
 
@@ -47,7 +47,7 @@ function NavBarBM (){
                                 </div>
                                 <div className="tab">
                                 <a className="navATag" href="https://store.steampowered.com/news/">
-                                    <span>News</span>
+                                    <span>Store</span>
                                 </a>
                                 </div>
                                 <div className="tab">

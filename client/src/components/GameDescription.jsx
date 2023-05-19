@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from "react";
-import pic from '/src/assets/game-description-image.png';
+import pic from '/src/assets/game-description-image.webp';
 import UserDefinedTags from "./UserDefinedTags";
 import "/src/styles/GameDescription.css"
 
